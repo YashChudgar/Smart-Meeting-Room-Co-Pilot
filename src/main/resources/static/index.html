@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Meeting Room Co-Pilot - Booking</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        .container { max-width: 400px; background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: #007bff; color: white; border: none; padding: 10px; width: 100%; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #message { margin-top: 15px; padding: 10px; border-radius: 4px; display: none; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Create Booking</h2>
+        
+        <div id="message"></div>
+
+        <form id="bookingForm">
+            <div class="form-group">
+                <label for="roomId">Room ID:</label>
+                <input type="number" id="roomId" required>
+            </div>
+
+            <div class="form-group">
+                <label for="organizer">Organizer:</label>
+                <input type="text" id="organizer" required>
+            </div>
+
+            <div class="form-group">
+                <label for="startTime">Start Time:</label>
+                <input type="datetime-local" id="startTime" required>
+            </div>
+
+            <div class="form-group">
+                <label for="endTime">End Time:</label>
+                <input type="datetime-local" id="endTime" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Attendee Count</label>
+                <input type="number" id="attendeeCount" required min="1" 
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border" />
+            </div>
+
+            <button type="submit">Submit Booking</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const msgBox = document.getElementById('message');
+            msgBox.style.display = 'none';
+
+            const payload = {
+                roomId: Number(document.getElementById('roomId').value),
+                organizer: document.getElementById('organizer').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                attendeeCount: parseInt(document.getElementById('attendeeCount').value)
+            };
+
+            try {
+                const response = await fetch('/api/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Failed to create booking.');
+                }
+
+                msgBox.textContent = `Success! Booking ID: ${data.id}`;
+                msgBox.className = 'success';
+                msgBox.style.display = 'block';
+                document.getElementById('bookingForm').reset();
+            } catch (err) {
+                msgBox.textContent = err.message;
+                msgBox.className = 'error';
+                msgBox.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
