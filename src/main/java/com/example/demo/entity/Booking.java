@@ -28,6 +28,8 @@ public class Booking {
 
     private LocalDateTime endTime;
 
+    private Integer attendeeCount;
+
     private LocalDateTime createdAt;
     
     public Booking() {
@@ -80,6 +82,21 @@ public class Booking {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setRoomId(Long roomId) {
+        if (this.room == null) {
+            this.room = new Room();
+        }
+        this.room.setId(roomId);
+    }
+
+    public Integer getAttendeeCount() {
+        return attendeeCount;
+    }
+
+    public void setAttendeeCount(Integer attendeeCount) {
+        this.attendeeCount = attendeeCount;
     }
 
 }

@@ -21,11 +21,23 @@ public class BookingService {
     }
 
     public Booking createBooking(Booking booking) {
+
+        System.out.println("DEBUG - Start Time: " + booking.getStartTime());
+        System.out.println("DEBUG - End Time: " + booking.getEndTime());
+
+
+
         if (!booking.getStartTime().isBefore(booking.getEndTime())){
             throw new IllegalArgumentException(
                 "Start time must be before end time"
             );
         }
+
+        if (booking.getAttendeeCount() == null || booking.getAttendeeCount() <= 0) {
+        throw new IllegalArgumentException(
+            "Attendee count must be at least 1"
+        );
+    }
 
         Long roomId = booking.getRoom().getId();
 
