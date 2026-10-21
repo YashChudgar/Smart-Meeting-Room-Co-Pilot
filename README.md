@@ -79,6 +79,7 @@ Open:
 
 ```text
 http://localhost:8080/api/health
+http://localhost:8080/api/bookings  so patrick can check h2 database
 ```
 
 A successful response should be:
