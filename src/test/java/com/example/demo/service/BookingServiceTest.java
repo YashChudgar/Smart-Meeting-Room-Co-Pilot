@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,7 @@ public class BookingServiceTest {
         room.setName("Main Conference Room");
 
         Booking booking = new Booking();
-        booking.setRoomId(1L);
+        booking.setRoom(room);
         booking.setOrganizer("Frank");
         booking.setStartTime(LocalDateTime.now().plusHours(1));
         booking.setEndTime(LocalDateTime.now().plusHours(3));
@@ -88,8 +89,11 @@ public class BookingServiceTest {
 
     @Test
     void testCreateBookingRoomNotFound() {
+        Room room = new Room();
+        room.setId(99L);
+
         Booking booking = new Booking();
-        booking.setRoomId(99L); // Non-existent room ID
+        booking.setRoom(room); // Non-existent room ID
         booking.setStartTime(LocalDateTime.now().plusHours(1));
         booking.setEndTime(LocalDateTime.now().plusHours(3));
         booking.setAttendeeCount(3);
@@ -102,4 +106,6 @@ public class BookingServiceTest {
 
         assertEquals("Room not found", exception.getMessage());
     }
+
+    
 }
