@@ -1,15 +1,17 @@
 package com.example.demo.controller;
 
 import com.example.demo.entity.Room;
-import com.example.demo.repository.RoomRepository;
 import com.example.demo.service.RoomService;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -30,9 +32,24 @@ public class RoomController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Room> getRoomById(
-        @PathVariable("id") Long id
-    ){
+            @PathVariable("id") Long id) {
         Room room = roomService.getRoomId(id);
         return ResponseEntity.ok(room);
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<List<Room>> searchAvailableRooms(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+
+            @RequestParam Integer minCapacity) {
+
+        List<Room> rooms = roomService.searchAvailableRooms(
+                startTime,
+                endTime,
+                minCapacity);
+
+        return ResponseEntity.ok(rooms);
     }
 }
