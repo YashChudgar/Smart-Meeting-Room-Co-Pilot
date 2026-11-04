@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -20,12 +21,14 @@ public class BookingService {
         this.roomRepository = roomRepository;
     }
 
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
+    }
+
     public Booking createBooking(Booking booking) {
 
         System.out.println("DEBUG - Start Time: " + booking.getStartTime());
         System.out.println("DEBUG - End Time: " + booking.getEndTime());
-
-
 
         if (!booking.getStartTime().isBefore(booking.getEndTime())){
             throw new IllegalArgumentException(

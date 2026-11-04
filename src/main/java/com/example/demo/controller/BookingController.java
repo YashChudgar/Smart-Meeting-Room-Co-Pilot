@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.entity.Booking;
 import com.example.demo.service.BookingService;
+import java.util.List;
 
 @RestController 
 @RequestMapping("/api/bookings")
@@ -35,4 +36,12 @@ public class BookingController {
 
         return ResponseEntity.ok(booking);
     }
+
+    @GetMapping
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        List<Booking> bookings = bookingService.getAllBookings();
+        return ResponseEntity.ok(bookings);
+    }
+
+
 }
