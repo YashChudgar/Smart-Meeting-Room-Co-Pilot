@@ -42,6 +42,17 @@ public class BookingController {
         List<Booking> bookings = bookingService.getAllBookings();
         return ResponseEntity.ok(bookings);
     }
+    
+@GetMapping("/organizer/{organizerId}")
+public ResponseEntity<List<Booking>> getBookingsByOrganizer(
+        @PathVariable String organizerId) {
+
+    List<Booking> bookings =
+            bookingService.getBookingsByOrganizer(organizerId);
+
+    return ResponseEntity.ok(bookings);
+}
+
 
 
 }

@@ -1,6 +1,7 @@
 package com.example.demo.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -8,7 +9,12 @@ import org.springframework.data.repository.query.Param;
 
 import com.example.demo.entity.Booking;
 
-public interface BookingRepository extends JpaRepository<Booking, Long>{
+public interface BookingRepository extends JpaRepository<Booking, Long> {
+
+    // Find bookings belonging to a particular organizer
+    List<Booking> findByOrganizer(String organizer);
+
+    // Check whether a room has an overlapping booking
     @Query("""
         SELECT COUNT(b) > 0
         FROM Booking b

@@ -24,6 +24,9 @@ public class BookingService {
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
     }
+    public List<Booking> getBookingsByOrganizer(String organizer) {
+    return bookingRepository.findByOrganizer(organizer);
+}
 
     public Booking createBooking(Booking booking) {
 
