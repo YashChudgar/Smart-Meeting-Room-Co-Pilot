@@ -9,8 +9,10 @@ import org.springframework.context.annotation.Bean;
 
 import com.example.demo.entity.Room;
 import com.example.demo.repository.RoomRepository;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 public class DemoApplication {
 
 	public static void main(String[] args) {

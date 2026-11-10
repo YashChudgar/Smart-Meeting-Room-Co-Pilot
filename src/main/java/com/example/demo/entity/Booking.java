@@ -2,6 +2,7 @@ package com.example.demo.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -35,6 +36,14 @@ public class Booking {
     private boolean checkedIn = false;
 
     private LocalDateTime checkedInAt;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean noShow = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean roomReleased = false;
+
+    private LocalDateTime releasedAt;
 
     public Booking() {
 
@@ -117,5 +126,29 @@ public class Booking {
 
     public void setCheckedInAt(LocalDateTime checkedInAt) {
         this.checkedInAt = checkedInAt;
+    }
+
+    public boolean isNoShow() {
+        return noShow;
+    }
+
+    public void setNoShow(boolean noShow) {
+        this.noShow = noShow;
+    }
+
+    public boolean isRoomReleased() {
+        return roomReleased;
+    }
+
+    public void setRoomReleased(boolean roomReleased) {
+        this.roomReleased = roomReleased;
+    }
+
+    public LocalDateTime getReleasedAt() {
+        return releasedAt;
+    }
+
+    public void setReleasedAt(LocalDateTime releasedAt) {
+        this.releasedAt = releasedAt;
     }
 }

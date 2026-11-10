@@ -12,6 +12,8 @@ import com.example.demo.exception.BookingConflictException;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.RoomRepository;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class BookingService {
 
@@ -115,6 +117,29 @@ public class BookingService {
     public Booking getBookingById(Long id) {
         return bookingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+    }
+
+    @Transactional 
+    public int releaseNoShowBookings() {
+
+        LocalDateTime deadline = LocalDateTime.now().minusMinutes(15);
+
+        List<Booking> overdueBookings = bookingRepository
+                .findByCheckedInFalseAndRoomReleasedFalseAndStartTimeLessThanEqual(
+                        deadline);
+
+        LocalDateTime releasedTime = LocalDateTime.now();
+
+        for (Booking booking : overdueBookings) {
+
+            booking.setNoShow(true);
+            booking.setRoomReleased(true);
+            booking.setReleasedAt(releasedTime);
+        }
+
+        bookingRepository.saveAll(overdueBookings);
+
+        return overdueBookings.size();
     }
 
 }
