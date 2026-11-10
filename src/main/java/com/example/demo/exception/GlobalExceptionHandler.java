@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -34,5 +36,37 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(response);
     }
+
+
+@ExceptionHandler(DuplicateRoomCodeException.class)
+public ResponseEntity<Map<String, String>> handleDuplicateRoomCode(
+        DuplicateRoomCodeException exception) {
+
+    Map<String, String> response = Map.of(
+            "error", "Conflict",
+            "message", exception.getMessage()
+    );
+
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+}
+
+@ExceptionHandler(MethodArgumentNotValidException.class)
+public ResponseEntity<Map<String, String>> handleValidationErrors(
+        MethodArgumentNotValidException exception) {
+
+    String message = exception.getBindingResult()
+            .getFieldErrors()
+            .stream()
+            .map(error -> error.getDefaultMessage())
+            .collect(Collectors.joining(", "));
+
+    Map<String, String> response = Map.of(
+            "error", "Bad Request",
+            "message", message
+    );
+
+    return ResponseEntity.badRequest().body(response);
+}
+
 
 }
