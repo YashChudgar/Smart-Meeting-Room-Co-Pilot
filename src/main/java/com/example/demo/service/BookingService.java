@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.entity.Booking;
 import com.example.demo.entity.Room;
+import com.example.demo.exception.BookingCheckInException;
 import com.example.demo.exception.BookingConflictException;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.RoomRepository;
@@ -73,6 +74,40 @@ public class BookingService {
 
         booking.setRoom(room);
         booking.setCreatedAt(LocalDateTime.now());
+
+        return bookingRepository.save(booking);
+    }
+
+    public Booking checkInBooking(Long bookingId) {
+
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime checkInOpensAt = booking.getStartTime().minusMinutes(10);
+        LocalDateTime checkInDeadline = booking.getStartTime().plusMinutes(15);
+
+        // Reject check-in more than 10 minutes before the meeting
+        if (now.isBefore(checkInOpensAt)) {
+            throw new BookingCheckInException(
+                    "Check-in is only available 10 minutes before the meeting");
+        }
+
+        // Reject check-in after the 15-minute grace period
+        if (now.isAfter(checkInDeadline)) {
+            throw new BookingCheckInException(
+                    "Check-in period has expired");
+        }
+
+        // Prevent duplicate check-ins
+        if (booking.isCheckedIn()) {
+            throw new BookingCheckInException(
+                    "This booking has already been checked in");
+        }
+
+        booking.setCheckedIn(true);
+        booking.setCheckedInAt(now);
 
         return bookingRepository.save(booking);
     }

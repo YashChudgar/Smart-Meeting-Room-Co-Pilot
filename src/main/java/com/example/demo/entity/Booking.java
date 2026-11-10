@@ -10,16 +10,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-@Entity 
-@Table(name="bookings")
+@Entity
+@Table(name = "bookings")
 public class Booking {
-    
-    @Id 
+
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne 
-    @JoinColumn(name="room_id",nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
     private String organizer;
@@ -31,11 +31,15 @@ public class Booking {
     private Integer attendeeCount;
 
     private LocalDateTime createdAt;
-    
+
+    private boolean checkedIn = false;
+
+    private LocalDateTime checkedInAt;
+
     public Booking() {
-        
+
     }
-    
+
     public Long getId() {
         return id;
     }
@@ -99,4 +103,19 @@ public class Booking {
         this.attendeeCount = attendeeCount;
     }
 
+    public boolean isCheckedIn() {
+        return checkedIn;
+    }
+
+    public void setCheckedIn(boolean checkedIn) {
+        this.checkedIn = checkedIn;
+    }
+
+    public LocalDateTime getCheckedInAt() {
+        return checkedInAt;
+    }
+
+    public void setCheckedInAt(LocalDateTime checkedInAt) {
+        this.checkedInAt = checkedInAt;
+    }
 }

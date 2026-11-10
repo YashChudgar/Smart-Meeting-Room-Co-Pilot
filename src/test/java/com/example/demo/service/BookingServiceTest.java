@@ -3,6 +3,7 @@ package com.example.demo.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ import org.mockito.MockitoAnnotations;
 
 import com.example.demo.entity.Booking;
 import com.example.demo.entity.Room;
+import com.example.demo.exception.BookingCheckInException;
 import com.example.demo.exception.BookingConflictException;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.RoomRepository;
@@ -255,4 +257,130 @@ class BookingServiceTest {
 
         verify(bookingRepository).save(any(Booking.class));
     }
+
+@Test
+void shouldSuccessfullyCheckInBooking() {
+
+    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
+
+    Booking booking = createBooking(
+            1L,
+            meetingStart,
+            meetingStart.plusHours(1));
+
+    booking.setId(1L);
+
+    when(bookingRepository.findById(1L))
+            .thenReturn(Optional.of(booking));
+
+    when(bookingRepository.save(any(Booking.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Booking result = bookingService.checkInBooking(1L);
+
+    assertTrue(result.isCheckedIn());
+    assertNotNull(result.getCheckedInAt());
+
+    verify(bookingRepository).save(booking);
+}
+
+@Test
+void shouldRejectCheckInTooEarly() {
+
+    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(20);
+
+    Booking booking = createBooking(
+            1L,
+            meetingStart,
+            meetingStart.plusHours(1));
+
+    booking.setId(1L);
+
+    when(bookingRepository.findById(1L))
+            .thenReturn(Optional.of(booking));
+
+    assertThrows(
+            BookingCheckInException.class,
+            () -> bookingService.checkInBooking(1L));
+
+    verify(bookingRepository, never()).save(any(Booking.class));
+}
+
+@Test
+void shouldRejectCheckInAfter15MinuteDeadline() {
+
+    LocalDateTime meetingStart = LocalDateTime.now().minusMinutes(20);
+
+    Booking booking = createBooking(
+            1L,
+            meetingStart,
+            meetingStart.plusHours(1));
+
+    booking.setId(1L);
+
+    when(bookingRepository.findById(1L))
+            .thenReturn(Optional.of(booking));
+
+    assertThrows(
+            BookingCheckInException.class,
+            () -> bookingService.checkInBooking(1L));
+
+    verify(bookingRepository, never()).save(any(Booking.class));
+}
+
+@Test
+void shouldRejectDuplicateCheckIn() {
+
+    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
+
+    Booking booking = createBooking(
+            1L,
+            meetingStart,
+            meetingStart.plusHours(1));
+
+    booking.setId(1L);
+    booking.setCheckedIn(true);
+
+    when(bookingRepository.findById(1L))
+            .thenReturn(Optional.of(booking));
+
+    assertThrows(
+            BookingCheckInException.class,
+            () -> bookingService.checkInBooking(1L));
+
+    verify(bookingRepository, never()).save(any(Booking.class));
+}
+
+@Test
+void shouldSaveCheckInTimestamp() {
+
+    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
+
+    Booking booking = createBooking(
+            1L,
+            meetingStart,
+            meetingStart.plusHours(1));
+
+    booking.setId(1L);
+
+    when(bookingRepository.findById(1L))
+            .thenReturn(Optional.of(booking));
+
+    when(bookingRepository.save(any(Booking.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+    LocalDateTime beforeCheckIn = LocalDateTime.now();
+
+    Booking result = bookingService.checkInBooking(1L);
+
+    LocalDateTime afterCheckIn = LocalDateTime.now();
+
+    assertNotNull(result.getCheckedInAt());
+
+    assertFalse(result.getCheckedInAt().isBefore(beforeCheckIn));
+    assertFalse(result.getCheckedInAt().isAfter(afterCheckIn));
+
+    assertTrue(result.isCheckedIn());
+}
+
 }
