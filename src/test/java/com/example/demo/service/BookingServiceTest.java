@@ -1,3 +1,4 @@
+
 package com.example.demo.service;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,10 +16,11 @@ import org.mockito.MockitoAnnotations;
 
 import com.example.demo.entity.Booking;
 import com.example.demo.entity.Room;
+import com.example.demo.exception.BookingConflictException;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.RoomRepository;
 
-public class BookingServiceTest {
+class BookingServiceTest {
 
     @Mock
     private BookingRepository bookingRepository;
@@ -29,82 +31,228 @@ public class BookingServiceTest {
     @InjectMocks
     private BookingService bookingService;
 
+    private final LocalDateTime start =
+            LocalDateTime.of(2026, 11, 12, 13, 0);
+
+    private final LocalDateTime end =
+            LocalDateTime.of(2026, 11, 12, 14, 0);
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
     }
 
-    @Test
-    void testCreateBookingSuccess() {
+    private Room createRoom(Long id) {
         Room room = new Room();
-        room.setId(1L);
-        room.setName("Main Conference Room");
+        room.setId(id);
+        room.setName("Meeting Room A");
+        return room;
+    }
+
+    private Booking createBooking(
+            Long roomId,
+            LocalDateTime startTime,
+            LocalDateTime endTime) {
 
         Booking booking = new Booking();
-        booking.setRoom(room);
+        booking.setRoom(createRoom(roomId));
         booking.setOrganizer("Frank");
-        booking.setStartTime(LocalDateTime.now().plusHours(1));
-        booking.setEndTime(LocalDateTime.now().plusHours(3));
+        booking.setStartTime(startTime);
+        booking.setEndTime(endTime);
         booking.setAttendeeCount(4);
 
-        when(roomRepository.findById(1L)).thenReturn(Optional.of(room));
-        when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+        return booking;
+    }
+
+    @Test
+    void testCreateBookingSuccess() {
+
+        Room room = createRoom(1L);
+        Booking booking = createBooking(1L, start, end);
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(room));
+
+        when(bookingRepository.hasOverlappingBooking(
+                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        when(bookingRepository.save(any(Booking.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         Booking savedBooking = bookingService.createBooking(booking);
 
         assertNotNull(savedBooking);
         assertEquals("Frank", savedBooking.getOrganizer());
         assertEquals(4, savedBooking.getAttendeeCount());
-        verify(bookingRepository, times(1)).save(any(Booking.class));
+
+        verify(bookingRepository).save(any(Booking.class));
     }
 
     @Test
     void testCreateBookingInvalidTime() {
-        Booking booking = new Booking();
-        booking.setStartTime(LocalDateTime.now().plusHours(3));
-        booking.setEndTime(LocalDateTime.now().plusHours(1)); // End is before start!
-        booking.setAttendeeCount(2);
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            bookingService.createBooking(booking);
-        });
+        Booking booking = createBooking(
+                1L, end, start);
 
-        assertEquals("Start time must be before end time", exception.getMessage());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> bookingService.createBooking(booking));
+
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
     void testCreateBookingInvalidAttendeeCount() {
-        Booking booking = new Booking();
-        booking.setStartTime(LocalDateTime.now().plusHours(1));
-        booking.setEndTime(LocalDateTime.now().plusHours(3));
-        booking.setAttendeeCount(0); // Invalid count
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            bookingService.createBooking(booking);
-        });
+        Booking booking = createBooking(1L, start, end);
+        booking.setAttendeeCount(0);
 
-        assertEquals("Attendee count must be at least 1", exception.getMessage());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> bookingService.createBooking(booking));
+
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test
     void testCreateBookingRoomNotFound() {
-        Room room = new Room();
-        room.setId(99L);
 
-        Booking booking = new Booking();
-        booking.setRoom(room); // Non-existent room ID
-        booking.setStartTime(LocalDateTime.now().plusHours(1));
-        booking.setEndTime(LocalDateTime.now().plusHours(3));
-        booking.setAttendeeCount(3);
+        Booking booking = createBooking(99L, start, end);
 
-        when(roomRepository.findById(99L)).thenReturn(Optional.empty());
+        when(roomRepository.findById(99L))
+                .thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            bookingService.createBooking(booking);
-        });
+        Exception exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> bookingService.createBooking(booking));
 
         assertEquals("Room not found", exception.getMessage());
+
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
-    
+    @Test
+    void shouldRejectDirectBookingOverlap() {
+
+        Booking booking = createBooking(
+                1L,
+                start.plusMinutes(30),
+                end.plusMinutes(30));
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(createRoom(1L)));
+
+        when(bookingRepository.hasOverlappingBooking(
+                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        assertThrows(
+                BookingConflictException.class,
+                () -> bookingService.createBooking(booking));
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void shouldRejectBookingWithin15MinuteBufferAfterExistingBooking() {
+
+        Booking booking = createBooking(
+                1L,
+                end.plusMinutes(10),
+                end.plusHours(1));
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(createRoom(1L)));
+
+        when(bookingRepository.hasOverlappingBooking(
+                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        assertThrows(
+                BookingConflictException.class,
+                () -> bookingService.createBooking(booking));
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+
+        verify(bookingRepository).hasOverlappingBooking(
+                1L,
+                end.plusMinutes(-5),
+                end.plusHours(1).plusMinutes(15));
+    }
+
+    @Test
+    void shouldRejectBookingWithin15MinuteBufferBeforeExistingBooking() {
+
+        Booking booking = createBooking(
+                1L,
+                start.minusHours(1),
+                start.minusMinutes(10));
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(createRoom(1L)));
+
+        when(bookingRepository.hasOverlappingBooking(
+                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(true);
+
+        assertThrows(
+                BookingConflictException.class,
+                () -> bookingService.createBooking(booking));
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void shouldAllowBookingExactly15MinutesAfterPreviousBooking() {
+
+        LocalDateTime newStart = end.plusMinutes(15);
+        LocalDateTime newEnd = end.plusHours(1).plusMinutes(15);
+
+        Booking booking = createBooking(1L, newStart, newEnd);
+
+        when(roomRepository.findById(1L))
+                .thenReturn(Optional.of(createRoom(1L)));
+
+        when(bookingRepository.hasOverlappingBooking(
+                eq(1L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        when(bookingRepository.save(any(Booking.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Booking result = bookingService.createBooking(booking);
+
+        assertNotNull(result);
+
+        verify(bookingRepository).save(any(Booking.class));
+
+        verify(bookingRepository).hasOverlappingBooking(
+                1L,
+                newStart.minusMinutes(15),
+                newEnd.plusMinutes(15));
+    }
+
+    @Test
+    void shouldAllowSameTimeBookingInDifferentRoom() {
+
+        Booking booking = createBooking(2L, start, end);
+
+        when(roomRepository.findById(2L))
+                .thenReturn(Optional.of(createRoom(2L)));
+
+        when(bookingRepository.hasOverlappingBooking(
+                eq(2L), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(false);
+
+        when(bookingRepository.save(any(Booking.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Booking result = bookingService.createBooking(booking);
+
+        assertNotNull(result);
+        assertEquals(2L, result.getRoom().getId());
+
+        verify(bookingRepository).save(any(Booking.class));
+    }
 }

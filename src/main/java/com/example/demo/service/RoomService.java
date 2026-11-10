@@ -68,7 +68,7 @@ public class RoomService {
                 .filter(room -> room.getCapacity() != null
                         && room.getCapacity() >= minCapacity)
                 .filter(room -> !bookingRepository.hasOverlappingBooking(
-                        room.getId(), startTime, endTime))
+                        room.getId(), startTime.minusMinutes(15), endTime.plusMinutes(15)))
                 .toList();
     }
 

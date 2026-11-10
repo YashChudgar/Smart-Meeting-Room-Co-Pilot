@@ -68,5 +68,16 @@ public ResponseEntity<Map<String, String>> handleValidationErrors(
     return ResponseEntity.badRequest().body(response);
 }
 
+@ExceptionHandler(BookingConflictException.class)
+public ResponseEntity<Map<String, String>> handleBookingConflict(
+        BookingConflictException exception) {
+
+    Map<String, String> response = Map.of(
+            "error", "Conflict",
+            "message", exception.getMessage()
+    );
+
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+}
 
 }
