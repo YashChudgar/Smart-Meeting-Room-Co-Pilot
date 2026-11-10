@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -33,11 +34,9 @@ class BookingServiceTest {
     @InjectMocks
     private BookingService bookingService;
 
-    private final LocalDateTime start =
-            LocalDateTime.of(2026, 11, 12, 13, 0);
+    private final LocalDateTime start = LocalDateTime.of(2026, 11, 12, 13, 0);
 
-    private final LocalDateTime end =
-            LocalDateTime.of(2026, 11, 12, 14, 0);
+    private final LocalDateTime end = LocalDateTime.of(2026, 11, 12, 14, 0);
 
     @BeforeEach
     void setUp() {
@@ -258,129 +257,213 @@ class BookingServiceTest {
         verify(bookingRepository).save(any(Booking.class));
     }
 
-@Test
-void shouldSuccessfullyCheckInBooking() {
+    @Test
+    void shouldSuccessfullyCheckInBooking() {
 
-    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
+        LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
 
-    Booking booking = createBooking(
-            1L,
-            meetingStart,
-            meetingStart.plusHours(1));
+        Booking booking = createBooking(
+                1L,
+                meetingStart,
+                meetingStart.plusHours(1));
 
-    booking.setId(1L);
+        booking.setId(1L);
 
-    when(bookingRepository.findById(1L))
-            .thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(1L))
+                .thenReturn(Optional.of(booking));
 
-    when(bookingRepository.save(any(Booking.class)))
-            .thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookingRepository.save(any(Booking.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-    Booking result = bookingService.checkInBooking(1L);
+        Booking result = bookingService.checkInBooking(1L);
 
-    assertTrue(result.isCheckedIn());
-    assertNotNull(result.getCheckedInAt());
+        assertTrue(result.isCheckedIn());
+        assertNotNull(result.getCheckedInAt());
 
-    verify(bookingRepository).save(booking);
-}
+        verify(bookingRepository).save(booking);
+    }
 
-@Test
-void shouldRejectCheckInTooEarly() {
+    @Test
+    void shouldRejectCheckInTooEarly() {
 
-    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(20);
+        LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(20);
 
-    Booking booking = createBooking(
-            1L,
-            meetingStart,
-            meetingStart.plusHours(1));
+        Booking booking = createBooking(
+                1L,
+                meetingStart,
+                meetingStart.plusHours(1));
 
-    booking.setId(1L);
+        booking.setId(1L);
 
-    when(bookingRepository.findById(1L))
-            .thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(1L))
+                .thenReturn(Optional.of(booking));
 
-    assertThrows(
-            BookingCheckInException.class,
-            () -> bookingService.checkInBooking(1L));
+        assertThrows(
+                BookingCheckInException.class,
+                () -> bookingService.checkInBooking(1L));
 
-    verify(bookingRepository, never()).save(any(Booking.class));
-}
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 
-@Test
-void shouldRejectCheckInAfter15MinuteDeadline() {
+    @Test
+    void shouldRejectCheckInAfter15MinuteDeadline() {
 
-    LocalDateTime meetingStart = LocalDateTime.now().minusMinutes(20);
+        LocalDateTime meetingStart = LocalDateTime.now().minusMinutes(20);
 
-    Booking booking = createBooking(
-            1L,
-            meetingStart,
-            meetingStart.plusHours(1));
+        Booking booking = createBooking(
+                1L,
+                meetingStart,
+                meetingStart.plusHours(1));
 
-    booking.setId(1L);
+        booking.setId(1L);
 
-    when(bookingRepository.findById(1L))
-            .thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(1L))
+                .thenReturn(Optional.of(booking));
 
-    assertThrows(
-            BookingCheckInException.class,
-            () -> bookingService.checkInBooking(1L));
+        assertThrows(
+                BookingCheckInException.class,
+                () -> bookingService.checkInBooking(1L));
 
-    verify(bookingRepository, never()).save(any(Booking.class));
-}
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 
-@Test
-void shouldRejectDuplicateCheckIn() {
+    @Test
+    void shouldRejectDuplicateCheckIn() {
 
-    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
+        LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
 
-    Booking booking = createBooking(
-            1L,
-            meetingStart,
-            meetingStart.plusHours(1));
+        Booking booking = createBooking(
+                1L,
+                meetingStart,
+                meetingStart.plusHours(1));
 
-    booking.setId(1L);
-    booking.setCheckedIn(true);
+        booking.setId(1L);
+        booking.setCheckedIn(true);
 
-    when(bookingRepository.findById(1L))
-            .thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(1L))
+                .thenReturn(Optional.of(booking));
 
-    assertThrows(
-            BookingCheckInException.class,
-            () -> bookingService.checkInBooking(1L));
+        assertThrows(
+                BookingCheckInException.class,
+                () -> bookingService.checkInBooking(1L));
 
-    verify(bookingRepository, never()).save(any(Booking.class));
-}
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
 
-@Test
-void shouldSaveCheckInTimestamp() {
+    @Test
+    void shouldSaveCheckInTimestamp() {
 
-    LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
+        LocalDateTime meetingStart = LocalDateTime.now().plusMinutes(5);
 
-    Booking booking = createBooking(
-            1L,
-            meetingStart,
-            meetingStart.plusHours(1));
+        Booking booking = createBooking(
+                1L,
+                meetingStart,
+                meetingStart.plusHours(1));
 
-    booking.setId(1L);
+        booking.setId(1L);
 
-    when(bookingRepository.findById(1L))
-            .thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(1L))
+                .thenReturn(Optional.of(booking));
 
-    when(bookingRepository.save(any(Booking.class)))
-            .thenAnswer(invocation -> invocation.getArgument(0));
+        when(bookingRepository.save(any(Booking.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-    LocalDateTime beforeCheckIn = LocalDateTime.now();
+        LocalDateTime beforeCheckIn = LocalDateTime.now();
 
-    Booking result = bookingService.checkInBooking(1L);
+        Booking result = bookingService.checkInBooking(1L);
 
-    LocalDateTime afterCheckIn = LocalDateTime.now();
+        LocalDateTime afterCheckIn = LocalDateTime.now();
 
-    assertNotNull(result.getCheckedInAt());
+        assertNotNull(result.getCheckedInAt());
 
-    assertFalse(result.getCheckedInAt().isBefore(beforeCheckIn));
-    assertFalse(result.getCheckedInAt().isAfter(afterCheckIn));
+        assertFalse(result.getCheckedInAt().isBefore(beforeCheckIn));
+        assertFalse(result.getCheckedInAt().isAfter(afterCheckIn));
 
-    assertTrue(result.isCheckedIn());
-}
+        assertTrue(result.isCheckedIn());
+    }
 
+    @Test
+    void shouldReleaseNoShowBookingAfter15MinuteDeadline() {
+
+        Booking booking = new Booking();
+
+        when(bookingRepository
+                .findByCheckedInFalseAndRoomReleasedFalseAndStartTimeLessThanEqual(
+                        any(LocalDateTime.class)))
+                .thenReturn(List.of(booking));
+
+        int releasedCount = bookingService.releaseNoShowBookings();
+
+        assertEquals(1, releasedCount);
+        assertTrue(booking.isNoShow());
+        assertTrue(booking.isRoomReleased());
+        assertNotNull(booking.getReleasedAt());
+
+        verify(bookingRepository).saveAll(List.of(booking));
+    }
+
+    @Test
+    void shouldNotReleaseCheckedInBookings() {
+
+        Booking checkedInBooking = new Booking();
+        checkedInBooking.setCheckedIn(true);
+
+        when(bookingRepository
+                .findByCheckedInFalseAndRoomReleasedFalseAndStartTimeLessThanEqual(
+                        any(LocalDateTime.class)))
+                .thenReturn(List.of());
+
+        int releasedCount = bookingService.releaseNoShowBookings();
+
+        assertEquals(0, releasedCount);
+        assertFalse(checkedInBooking.isNoShow());
+        assertFalse(checkedInBooking.isRoomReleased());
+
+        verify(bookingRepository).saveAll(List.of());
+    }
+
+    @Test
+    void shouldReleaseMultipleNoShowBookings() {
+
+        Booking booking1 = new Booking();
+        Booking booking2 = new Booking();
+        Booking booking3 = new Booking();
+
+        List<Booking> overdueBookings = List.of(
+                booking1,
+                booking2,
+                booking3);
+
+        when(bookingRepository
+                .findByCheckedInFalseAndRoomReleasedFalseAndStartTimeLessThanEqual(
+                        any(LocalDateTime.class)))
+                .thenReturn(overdueBookings);
+
+        int releasedCount = bookingService.releaseNoShowBookings();
+
+        assertEquals(3, releasedCount);
+
+        for (Booking booking : overdueBookings) {
+            assertTrue(booking.isNoShow());
+            assertTrue(booking.isRoomReleased());
+            assertNotNull(booking.getReleasedAt());
+        }
+
+        verify(bookingRepository).saveAll(overdueBookings);
+    }
+
+    @Test
+    void shouldNotReleaseBookingsWhenNoOverdueBookingsExist() {
+
+        when(bookingRepository
+                .findByCheckedInFalseAndRoomReleasedFalseAndStartTimeLessThanEqual(
+                        any(LocalDateTime.class)))
+                .thenReturn(List.of());
+
+        int releasedCount = bookingService.releaseNoShowBookings();
+
+        assertEquals(0, releasedCount);
+
+        verify(bookingRepository).saveAll(List.of());
+    }
 }
