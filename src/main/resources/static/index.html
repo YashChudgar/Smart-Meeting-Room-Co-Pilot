@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Meeting Room Co-Pilot</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; color: #333; max-width: 950px; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+        .recommended { background: #e6f4ea; border-color: #34a853; }
+        section { margin-bottom: 25px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #fafafa; }
+        input, button { padding: 6px; margin: 4px 0; }
+        .grid { display: flex; gap: 20px; }
+        .col { flex: 1; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 10px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
+    </style>
+</head>
+<body>
+
+    <h1>Meeting Room Co-Pilot Dashboard</h1>
+
+    <!-- Global Messages -->
+    <div id="message" style="margin-bottom: 15px;"></div>
+
+    <!-- Smart Room Search & Recommendation -->
+    <section style="background: #f0f4f8; border-color: #cbd5e1;">
+        <h2>Find Suitable Meeting Room</h2>
+        <form id="searchForm">
+            <label>Start Time: <input type="datetime-local" id="searchStart" required></label>
+            <label>End Time: <input type="datetime-local" id="searchEnd" required></label><br>
+            <label>Attendees (Capacity): <input type="number" id="searchAttendees" min="1" required></label>
+            <button type="submit">Search Available Rooms</button>
+        </form>
+        <div id="searchLoading" style="display:none; margin-top:8px;">Searching rooms...</div>
+        <div id="searchResults" style="margin-top: 10px;"></div>
+    </section>
+
+    <div class="grid">
+        <!-- Left Column: All Rooms -->
+        <div class="col">
+            <section>
+                <h2>All Rooms</h2>
+                <div id="loadingRooms">Loading rooms...</div>
+                <ul id="roomList"></ul>
+                <button onclick="fetchRooms()">Refresh Rooms</button>
+            </section>
+        </div>
+
+        <!-- Right Column: Booking & My Bookings / Check-In -->
+        <div class="col">
+            <section>
+                <h2>Book a Room</h2>
+                <form id="bookingForm">
+                    <label>Room ID: <input type="number" id="bookRoomId" required></label><br>
+                    <label>Organizer: <input type="text" id="organizer" required></label><br>
+                    <label>Attendees: <input type="number" id="bookAttendees" min="1" required></label><br>
+                    <label>Start Time: <input type="datetime-local" id="startTime" required></label><br>
+                    <label>End Time: <input type="datetime-local" id="endTime" required></label><br>
+                    <button type="submit">Submit Booking</button>
+                </form>
+            </section>
+
+            <!-- My Bookings & Check-In Section -->
+            <section>
+                <h2>My Bookings & Check-In</h2>
+                <div id="loadingBookings">Loading bookings...</div>
+                <ul id="bookingsList"></ul>
+                <button onclick="fetchBookings()">Refresh Bookings</button>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+
+        // Robust date parser for Java LocalDateTime (handles both Arrays and Strings)
+        function parseBackendDate(val) {
+            if (!val) return new Date(0);
+            if (Array.isArray(val)) {
+                return new Date(val[0], val[1] - 1, val[2] || 1, val[3] || 0, val[4] || 0, val[5] || 0);
+            }
+            return new Date(val);
+        }
+
+        async function fetchRooms() {
+            const loading = document.getElementById('loadingRooms');
+            const list = document.getElementById('roomList');
+            
+            loading.style.display = 'block';
+            list.innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_URL}/rooms`);
+                if (!res.ok) throw new Error('Failed to fetch rooms.');
+                const rooms = await res.json();
+                
+                loading.style.display = 'none';
+                if (rooms.length === 0) {
+                    list.innerHTML = '<li>No rooms found.</li>';
+                    return;
+                }
+
+                list.innerHTML = rooms.map(r => `
+                    <li>
+                        <strong>ID: ${r.id}</strong> - ${r.name} (${r.capacity} seats)
+                        <button onclick="selectRoom(${r.id})">Use ID</button>
+                    </li>
+                `).join('');
+            } catch (err) {
+                loading.style.display = 'none';
+                document.getElementById('message').className = 'error';
+                document.getElementById('message').textContent = 'Backend offline or rooms endpoint error.';
+            }
+        }
+
+        async function fetchBookings() {
+            const loading = document.getElementById('loadingBookings');
+            const list = document.getElementById('bookingsList');
+            
+            loading.style.display = 'block';
+            list.innerHTML = '';
+
+            try {
+                const res = await fetch(`${API_URL}/bookings`);
+                if (!res.ok) throw new Error('Failed to fetch bookings.');
+                const bookings = await res.json();
+                
+                loading.style.display = 'none';
+                if (bookings.length === 0) {
+                    list.innerHTML = '<li>No active bookings found.</li>';
+                    return;
+                }
+
+                list.innerHTML = bookings.map(b => `
+                    <li>
+                        <strong>Booking ID: ${b.id}</strong><br>
+                        Room ID: ${b.room ? b.room.id : 'N/A'} | Organizer: ${b.organizer || 'N/A'}<br>
+                        <small>${parseBackendDate(b.startTime).toLocaleString()} to ${parseBackendDate(b.endTime).toLocaleString()}</small><br>
+                        Status: <span style="font-weight:bold;">${b.status || 'CONFIRMED'}</span>
+                        ${!b.checkedIn ? `<button onclick="checkInBooking(${b.id})" style="float:right; background:#34a853; color:#fff; border:none; border-radius:3px; cursor:pointer;">Check In</button>` : '<span style="float:right; color:green; font-weight:bold;">Checked In ✓</span>'}
+                    </li>
+                `).join('');
+            } catch (err) {
+                loading.style.display = 'none';
+                list.innerHTML = '<li class="error">Could not load bookings list.</li>';
+            }
+        }
+
+        async function checkInBooking(bookingId) {
+            const msg = document.getElementById('message');
+            msg.textContent = '';
+
+            try {
+                const res = await fetch(`${API_URL}/bookings/${bookingId}/check-in`, {
+                    method: 'POST'
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Check-in failed.');
+                }
+
+                msg.className = 'success';
+                msg.textContent = `Successfully checked in for Booking #${bookingId}!`;
+                fetchBookings();
+            } catch (err) {
+                msg.className = 'error';
+                msg.textContent = err.message;
+            }
+        }
+
+        function selectRoom(id) {
+            document.getElementById('bookRoomId').value = id;
+        }
+
+        // Smart Room Search Handler
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const startStr = document.getElementById('searchStart').value;
+            const endStr = document.getElementById('searchEnd').value;
+            const attendees = Number(document.getElementById('searchAttendees').value);
+            const loadingDiv = document.getElementById('searchLoading');
+            const resultsDiv = document.getElementById('searchResults');
+
+            if (new Date(startStr) >= new Date(endStr)) {
+                resultsDiv.innerHTML = '<p class="error">End time must be strictly after start time.</p>';
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            try {
+                const [roomsRes, bookingsRes] = await Promise.all([
+                    fetch(`${API_URL}/rooms`),
+                    fetch(`${API_URL}/bookings`)
+                ]);
+
+                if (!roomsRes.ok) throw new Error('Failed to retrieve rooms for search.');
+                const rooms = await roomsRes.json();
+                const bookings = bookingsRes.ok ? await bookingsRes.json() : [];
+
+                const capacityFiltered = rooms.filter(r => r.capacity >= attendees);
+                if (capacityFiltered.length === 0) {
+                    loadingDiv.style.display = 'none';
+                    resultsDiv.innerHTML = `<p class="error">No rooms found with sufficient capacity for ${attendees} attendees.</p>`;
+                    return;
+                }
+
+                const reqStart = new Date(startStr);
+                const reqEnd = new Date(endStr);
+
+                const availableRooms = capacityFiltered.filter(room => {
+                    const hasConflict = bookings.some(b => {
+                        const bRoomId = b.room ? (b.room.id !== undefined ? b.room.id : b.room) : b.roomId;
+                        if (Number(bRoomId) !== Number(room.id)) return false;
+                        if (b.status === 'CANCELLED') return false;
+
+                        const bStart = parseBackendDate(b.startTime);
+                        const bEnd = parseBackendDate(b.endTime);
+
+                        return reqStart < bEnd && reqEnd > bStart;
+                    });
+
+                    return !hasConflict;
+                });
+
+                loadingDiv.style.display = 'none';
+
+                if (availableRooms.length === 0) {
+                    resultsDiv.innerHTML = '<p class="error">No suitable rooms available during this time window (all matching rooms have booking conflicts).</p>';
+                    return;
+                }
+
+                availableRooms.sort((a, b) => a.capacity - b.capacity);
+
+                resultsDiv.innerHTML = `
+                    <p class="success">Found ${availableRooms.length} suitable room(s):</p>
+                    <ul>
+                        ${availableRooms.map((r, index) => `
+                            <li class="${index === 0 ? 'recommended' : ''}">
+                                <strong>ID: ${r.id}</strong> - ${r.name} (${r.capacity} seats) 
+                                ${index === 0 ? '<strong>★ RECOMMENDED (Smallest Suitable)</strong>' : ''}
+                                <button onclick="selectRoomForBooking(${r.id}, '${startStr}', '${endStr}', ${attendees})">Book This Room</button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            } catch (err) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<p class="error">${err.message}</p>`;
+            }
+        });
+
+        function selectRoomForBooking(id, start, end, attendees) {
+            document.getElementById('bookRoomId').value = id;
+            document.getElementById('startTime').value = start;
+            document.getElementById('endTime').value = end;
+            if (attendees) document.getElementById('bookAttendees').value = attendees;
+            window.scrollTo({ top: document.getElementById('bookingForm').offsetTop, behavior: 'smooth' });
+        }
+
+        // Booking Form Submission & Validation Handler
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('message');
+            msg.textContent = '';
+
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+
+            if (new Date(startTime) >= new Date(endTime)) {
+                msg.className = 'error';
+                msg.textContent = 'Validation Error: End time must be strictly after start time.';
+                return;
+            }
+
+            const payload = {
+                room: { id: Number(document.getElementById('bookRoomId').value) },
+                organizer: document.getElementById('organizer').value,
+                attendeeCount: Number(document.getElementById('bookAttendees').value),
+                startTime: startTime,
+                endTime: endTime
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/bookings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    // Catch conflict/overlap or generic booking failures and show user-friendly message
+                    throw new Error("Can't book this room due to time conflict");
+                }
+
+                msg.className = 'success';
+                msg.textContent = 'Booking created successfully and saved!';
+                document.getElementById('bookingForm').reset();
+                fetchRooms();
+                fetchBookings();
+            } catch (err) {
+                msg.className = 'error';
+                msg.textContent = err.message;
+            }
+        });
+
+        // Initial Load on Page Startup
+        fetchRooms();
+        fetchBookings();
+    </script>
+</body>
+</html>

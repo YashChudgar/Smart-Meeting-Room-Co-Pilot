@@ -1,0 +1,33 @@
+name: SonarQube Cloud Scan
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - staging
+
+jobs:
+  sonarcloud:
+    name: SonarQube Cloud Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Crucial: Disables shallow clones so SonarQube can calculate blame data correctly
+
+      - name: Run SonarQube Cloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Automatically provided by GitHub
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # The secret you created in Step 3
+        with:
+          args: >
+            -Dsonar.projectKey=YashChudgar_Smart-Meeting-Room-Co-Pilot
+            -Dsonar.organization=yashchudgar
+            -Dsonar.sources=.
