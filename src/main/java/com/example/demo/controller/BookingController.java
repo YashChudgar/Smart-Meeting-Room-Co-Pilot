@@ -13,25 +13,25 @@ import com.example.demo.entity.Booking;
 import com.example.demo.service.BookingService;
 import java.util.List;
 
-@RestController 
+@RestController
 @RequestMapping("/api/bookings")
 public class BookingController {
-    
+
     private final BookingService bookingService;
 
-    public BookingController(BookingService bookingService){
+    public BookingController(BookingService bookingService) {
         this.bookingService = bookingService;
     }
 
-    @PostMapping 
-    public ResponseEntity<Booking> createBooking(@RequestBody Booking booking){
+    @PostMapping
+    public ResponseEntity<Booking> createBooking(@RequestBody Booking booking) {
         Booking createdBooking = bookingService.createBooking(booking);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(createdBooking);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Booking> getBookingById(@PathVariable  Long id){
+    public ResponseEntity<Booking> getBookingById(@PathVariable Long id) {
         Booking booking = bookingService.getBookingById(id);
 
         return ResponseEntity.ok(booking);
@@ -43,5 +43,12 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
+    @PostMapping("/{id}/check-in")
+    public ResponseEntity<Booking> checkInBooking(@PathVariable Long id) {
+
+        Booking checkedInBooking = bookingService.checkInBooking(id);
+
+        return ResponseEntity.ok(checkedInBooking);
+    }
 
 }

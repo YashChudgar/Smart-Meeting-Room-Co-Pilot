@@ -2,6 +2,7 @@ package com.example.demo.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,16 +11,16 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-@Entity 
-@Table(name="bookings")
+@Entity
+@Table(name = "bookings")
 public class Booking {
-    
-    @Id 
+
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne 
-    @JoinColumn(name="room_id",nullable = false)
+    @ManyToOne
+    @JoinColumn(name = "room_id", nullable = false)
     private Room room;
 
     private String organizer;
@@ -31,11 +32,23 @@ public class Booking {
     private Integer attendeeCount;
 
     private LocalDateTime createdAt;
-    
+
+    private boolean checkedIn = false;
+
+    private LocalDateTime checkedInAt;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean noShow = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean roomReleased = false;
+
+    private LocalDateTime releasedAt;
+
     public Booking() {
-        
+
     }
-    
+
     public Long getId() {
         return id;
     }
@@ -99,4 +112,43 @@ public class Booking {
         this.attendeeCount = attendeeCount;
     }
 
+    public boolean isCheckedIn() {
+        return checkedIn;
+    }
+
+    public void setCheckedIn(boolean checkedIn) {
+        this.checkedIn = checkedIn;
+    }
+
+    public LocalDateTime getCheckedInAt() {
+        return checkedInAt;
+    }
+
+    public void setCheckedInAt(LocalDateTime checkedInAt) {
+        this.checkedInAt = checkedInAt;
+    }
+
+    public boolean isNoShow() {
+        return noShow;
+    }
+
+    public void setNoShow(boolean noShow) {
+        this.noShow = noShow;
+    }
+
+    public boolean isRoomReleased() {
+        return roomReleased;
+    }
+
+    public void setRoomReleased(boolean roomReleased) {
+        this.roomReleased = roomReleased;
+    }
+
+    public LocalDateTime getReleasedAt() {
+        return releasedAt;
+    }
+
+    public void setReleasedAt(LocalDateTime releasedAt) {
+        this.releasedAt = releasedAt;
+    }
 }
