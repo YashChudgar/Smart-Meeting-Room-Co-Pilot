@@ -1,3 +1,4 @@
+
 package com.example.demo.repository;
 
 import java.time.LocalDateTime;
@@ -19,12 +20,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         SELECT COUNT(b) > 0
         FROM Booking b
         WHERE b.room.id = :roomId
-        AND b.startTime < :requestedEnd
-        AND b.endTime > :requestedStart
+        AND b.roomReleased = false
+        AND b.startTime < :requestedEndWithBuffer
+        AND b.endTime > :requestedStartWithBuffer
     """)
     boolean hasOverlappingBooking(
-        @Param("roomId") Long roomId,
-        @Param("requestedStart") LocalDateTime requestedStart,
-        @Param("requestedEnd") LocalDateTime requestedEnd
+            @Param("roomId") Long roomId,
+            @Param("requestedStartWithBuffer") LocalDateTime requestedStartWithBuffer,
+            @Param("requestedEndWithBuffer") LocalDateTime requestedEndWithBuffer
+    );
+
+    List<Booking> findByCheckedInFalseAndRoomReleasedFalseAndStartTimeLessThanEqual(
+            LocalDateTime deadline
     );
 }

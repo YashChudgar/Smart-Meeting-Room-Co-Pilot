@@ -2,202 +2,315 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Meeting Room Co-Pilot</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; color: #333; max-width: 950px; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; font-weight: bold; }
+        .recommended { background: #e6f4ea; border-color: #34a853; }
+        section { margin-bottom: 25px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #fafafa; }
+        input, button { padding: 6px; margin: 4px 0; }
+        .grid { display: flex; gap: 20px; }
+        .col { flex: 1; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 10px; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; }
+    </style>
 </head>
-<body class="bg-gray-100 p-6">
+<body>
 
-    <div class="max-w-lg mx-auto bg-white p-6 rounded shadow border border-gray-200">
-        <h1 class="text-xl font-bold mb-1">Smart Meeting Room Co-Pilot</h1>
-        <p class="text-sm text-gray-600 mb-6">Select an available room and fill out the form below to book.</p>
+    <h1>Meeting Room Co-Pilot Dashboard</h1>
 
-        <!-- Room Availability Section -->
-        <h2 class="text-base font-semibold mb-3">Available Rooms</h2>
-        <div id="loading" class="text-sm text-gray-500 mb-4">Loading rooms...</div>
-        <div id="room-list" class="space-y-2 mb-6"></div>
+    <!-- Global Messages -->
+    <div id="message" style="margin-bottom: 15px;"></div>
 
-        <hr class="my-6 border-gray-200">
-
-        <!-- Booking Form Section -->
-        <h2 class="text-base font-semibold mb-3">Create Booking</h2>
-        <div id="message" class="mb-4 p-3 rounded text-sm hidden"></div>
-
-        <form id="bookingForm" class="space-y-4">
-            <div>
-                <label for="roomId" class="block text-sm font-medium text-gray-700 mb-1">Selected Room:</label>
-                <input type="text" id="roomId" required readonly placeholder="Click 'Select' on a room above"
-                       class="w-full p-2 border border-gray-300 rounded text-sm bg-gray-50 text-gray-700 cursor-not-allowed">
-            </div>
-
-            <div>
-                <label for="organizer" class="block text-sm font-medium text-gray-700 mb-1">Organizer:</label>
-                <input type="text" id="organizer" required placeholder="e.g. Frank"
-                       class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
-            </div>
-
-            <div>
-                <label for="startTime" class="block text-sm font-medium text-gray-700 mb-1">Start Time:</label>
-                <input type="datetime-local" id="startTime" required 
-                       class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
-            </div>
-
-            <div>
-                <label for="endTime" class="block text-sm font-medium text-gray-700 mb-1">End Time:</label>
-                <input type="datetime-local" id="endTime" required 
-                       class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
-            </div>
-
-            <div>
-                <label for="attendeeCount" class="block text-sm font-medium text-gray-700 mb-1">Attendee Count:</label>
-                <input type="number" id="attendeeCount" required min="1" placeholder="e.g. 4"
-                       class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500">
-            </div>
-
-            <button type="submit" 
-                    class="w-full bg-blue-600 text-white p-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors cursor-pointer">
-                Submit Booking
-            </button>
+    <!-- Smart Room Search & Recommendation -->
+    <section style="background: #f0f4f8; border-color: #cbd5e1;">
+        <h2>Find Suitable Meeting Room</h2>
+        <form id="searchForm">
+            <label>Start Time: <input type="datetime-local" id="searchStart" required></label>
+            <label>End Time: <input type="datetime-local" id="searchEnd" required></label><br>
+            <label>Attendees (Capacity): <input type="number" id="searchAttendees" min="1" required></label>
+            <button type="submit">Search Available Rooms</button>
         </form>
+        <div id="searchLoading" style="display:none; margin-top:8px;">Searching rooms...</div>
+        <div id="searchResults" style="margin-top: 10px;"></div>
+    </section>
+
+    <div class="grid">
+        <!-- Left Column: All Rooms -->
+        <div class="col">
+            <section>
+                <h2>All Rooms</h2>
+                <div id="loadingRooms">Loading rooms...</div>
+                <ul id="roomList"></ul>
+                <button onclick="fetchRooms()">Refresh Rooms</button>
+            </section>
+        </div>
+
+        <!-- Right Column: Booking & My Bookings / Check-In -->
+        <div class="col">
+            <section>
+                <h2>Book a Room</h2>
+                <form id="bookingForm">
+                    <label>Room ID: <input type="number" id="bookRoomId" required></label><br>
+                    <label>Organizer: <input type="text" id="organizer" required></label><br>
+                    <label>Attendees: <input type="number" id="bookAttendees" min="1" required></label><br>
+                    <label>Start Time: <input type="datetime-local" id="startTime" required></label><br>
+                    <label>End Time: <input type="datetime-local" id="endTime" required></label><br>
+                    <button type="submit">Submit Booking</button>
+                </form>
+            </section>
+
+            <!-- My Bookings & Check-In Section -->
+            <section>
+                <h2>My Bookings & Check-In</h2>
+                <div id="loadingBookings">Loading bookings...</div>
+                <ul id="bookingsList"></ul>
+                <button onclick="fetchBookings()">Refresh Bookings</button>
+            </section>
+        </div>
     </div>
 
     <script>
-        const mockRooms = [
-            { id: 1, name: 'Room A', capacity: 6, isAvailable: true },
-            { id: 2, name: 'Room B', capacity: 10, isAvailable: false },
-            { id: 3, name: 'Room C', capacity: 4, isAvailable: true },
-            { id: 4, name: 'Room D', capacity: 12, isAvailable: true },
-            { id: 5, name: 'Conference Suite 1', capacity: 20, isAvailable: false }
-        ];
+        const API_URL = 'http://localhost:8080/api';
 
-        let selectedNumericRoomId = null;
+        // Robust date parser for Java LocalDateTime (handles both Arrays and Strings)
+        function parseBackendDate(val) {
+            if (!val) return new Date(0);
+            if (Array.isArray(val)) {
+                return new Date(val[0], val[1] - 1, val[2] || 1, val[3] || 0, val[4] || 0, val[5] || 0);
+            }
+            return new Date(val);
+        }
 
-        async function loadRooms() {
+        async function fetchRooms() {
+            const loading = document.getElementById('loadingRooms');
+            const list = document.getElementById('roomList');
+            
+            loading.style.display = 'block';
+            list.innerHTML = '';
+
             try {
-                const response = await fetch('/api/rooms');
-                if (!response.ok) throw new Error('API unavailable');
-                const rooms = await response.json();
-                renderRooms(rooms);
-            } catch (error) {
-                setTimeout(() => renderRooms(mockRooms), 200);
+                const res = await fetch(`${API_URL}/rooms`);
+                if (!res.ok) throw new Error('Failed to fetch rooms.');
+                const rooms = await res.json();
+                
+                loading.style.display = 'none';
+                if (rooms.length === 0) {
+                    list.innerHTML = '<li>No rooms found.</li>';
+                    return;
+                }
+
+                list.innerHTML = rooms.map(r => `
+                    <li>
+                        <strong>ID: ${r.id}</strong> - ${r.name} (${r.capacity} seats)
+                        <button onclick="selectRoom(${r.id})">Use ID</button>
+                    </li>
+                `).join('');
+            } catch (err) {
+                loading.style.display = 'none';
+                document.getElementById('message').className = 'error';
+                document.getElementById('message').textContent = 'Backend offline or rooms endpoint error.';
             }
         }
 
-        function renderRooms(rooms) {
-            const list = document.getElementById('room-list');
-            const loading = document.getElementById('loading');
+        async function fetchBookings() {
+            const loading = document.getElementById('loadingBookings');
+            const list = document.getElementById('bookingsList');
             
+            loading.style.display = 'block';
             list.innerHTML = '';
-            loading.style.display = 'none';
 
-            rooms.forEach(room => {
-                const card = document.createElement('div');
-                card.className = 'flex justify-between items-center p-3 border border-gray-200 rounded bg-gray-50 text-sm';
+            try {
+                const res = await fetch(`${API_URL}/bookings`);
+                if (!res.ok) throw new Error('Failed to fetch bookings.');
+                const bookings = await res.json();
                 
-                const safeRoomName = room.name.replace(/'/g, "\\'");
+                loading.style.display = 'none';
+                if (bookings.length === 0) {
+                    list.innerHTML = '<li>No active bookings found.</li>';
+                    return;
+                }
 
-                card.innerHTML = `
-                    <div>
-                        <span class="font-bold text-gray-800">${room.name}</span> (Capacity: ${room.capacity})<br>
-                        <span class="${room.isAvailable ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}">
-                            ${room.isAvailable ? 'Available' : 'Occupied'}
-                        </span>
-                    </div>
-                    <button type="button" 
-                        onclick="selectRoom(${room.id}, '${safeRoomName}', ${room.isAvailable})" 
-                        class="px-3 py-1.5 rounded text-xs font-medium ${
-                            room.isAvailable 
-                                ? 'bg-green-600 text-white hover:bg-green-700 cursor-pointer' 
-                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                        }"
-                        ${!room.isAvailable ? 'disabled' : ''}>
-                        ${room.isAvailable ? 'Select' : 'Booked'}
-                    </button>
-                `;
-                list.appendChild(card);
-            });
+                list.innerHTML = bookings.map(b => `
+                    <li>
+                        <strong>Booking ID: ${b.id}</strong><br>
+                        Room ID: ${b.room ? b.room.id : 'N/A'} | Organizer: ${b.organizer || 'N/A'}<br>
+                        <small>${parseBackendDate(b.startTime).toLocaleString()} to ${parseBackendDate(b.endTime).toLocaleString()}</small><br>
+                        Status: <span style="font-weight:bold;">${b.status || 'CONFIRMED'}</span>
+                        ${!b.checkedIn ? `<button onclick="checkInBooking(${b.id})" style="float:right; background:#34a853; color:#fff; border:none; border-radius:3px; cursor:pointer;">Check In</button>` : '<span style="float:right; color:green; font-weight:bold;">Checked In ✓</span>'}
+                    </li>
+                `).join('');
+            } catch (err) {
+                loading.style.display = 'none';
+                list.innerHTML = '<li class="error">Could not load bookings list.</li>';
+            }
         }
 
-        function selectRoom(id, roomName, isAvailable) {
-            if (!isAvailable) return;
-            selectedNumericRoomId = id;
-            document.getElementById('roomId').value = roomName;
+        async function checkInBooking(bookingId) {
+            const msg = document.getElementById('message');
+            msg.textContent = '';
+
+            try {
+                const res = await fetch(`${API_URL}/bookings/${bookingId}/check-in`, {
+                    method: 'POST'
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.message || 'Check-in failed.');
+                }
+
+                msg.className = 'success';
+                msg.textContent = `Successfully checked in for Booking #${bookingId}!`;
+                fetchBookings();
+            } catch (err) {
+                msg.className = 'error';
+                msg.textContent = err.message;
+            }
         }
 
-        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+        function selectRoom(id) {
+            document.getElementById('bookRoomId').value = id;
+        }
+
+        // Smart Room Search Handler
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const msgBox = document.getElementById('message');
-            msgBox.classList.add('hidden');
-            msgBox.textContent = '';
+            const startStr = document.getElementById('searchStart').value;
+            const endStr = document.getElementById('searchEnd').value;
+            const attendees = Number(document.getElementById('searchAttendees').value);
+            const loadingDiv = document.getElementById('searchLoading');
+            const resultsDiv = document.getElementById('searchResults');
 
-            if (!selectedNumericRoomId) {
-                msgBox.textContent = 'Please select an available room from the list above first.';
-                msgBox.className = 'mb-4 p-3 rounded text-sm bg-red-100 text-red-800 border border-red-200';
-                msgBox.classList.remove('hidden');
+            if (new Date(startStr) >= new Date(endStr)) {
+                resultsDiv.innerHTML = '<p class="error">End time must be strictly after start time.</p>';
                 return;
             }
+
+            loadingDiv.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            try {
+                const [roomsRes, bookingsRes] = await Promise.all([
+                    fetch(`${API_URL}/rooms`),
+                    fetch(`${API_URL}/bookings`)
+                ]);
+
+                if (!roomsRes.ok) throw new Error('Failed to retrieve rooms for search.');
+                const rooms = await roomsRes.json();
+                const bookings = bookingsRes.ok ? await bookingsRes.json() : [];
+
+                const capacityFiltered = rooms.filter(r => r.capacity >= attendees);
+                if (capacityFiltered.length === 0) {
+                    loadingDiv.style.display = 'none';
+                    resultsDiv.innerHTML = `<p class="error">No rooms found with sufficient capacity for ${attendees} attendees.</p>`;
+                    return;
+                }
+
+                const reqStart = new Date(startStr);
+                const reqEnd = new Date(endStr);
+
+                const availableRooms = capacityFiltered.filter(room => {
+                    const hasConflict = bookings.some(b => {
+                        const bRoomId = b.room ? (b.room.id !== undefined ? b.room.id : b.room) : b.roomId;
+                        if (Number(bRoomId) !== Number(room.id)) return false;
+                        if (b.status === 'CANCELLED') return false;
+
+                        const bStart = parseBackendDate(b.startTime);
+                        const bEnd = parseBackendDate(b.endTime);
+
+                        return reqStart < bEnd && reqEnd > bStart;
+                    });
+
+                    return !hasConflict;
+                });
+
+                loadingDiv.style.display = 'none';
+
+                if (availableRooms.length === 0) {
+                    resultsDiv.innerHTML = '<p class="error">No suitable rooms available during this time window (all matching rooms have booking conflicts).</p>';
+                    return;
+                }
+
+                availableRooms.sort((a, b) => a.capacity - b.capacity);
+
+                resultsDiv.innerHTML = `
+                    <p class="success">Found ${availableRooms.length} suitable room(s):</p>
+                    <ul>
+                        ${availableRooms.map((r, index) => `
+                            <li class="${index === 0 ? 'recommended' : ''}">
+                                <strong>ID: ${r.id}</strong> - ${r.name} (${r.capacity} seats) 
+                                ${index === 0 ? '<strong>★ RECOMMENDED (Smallest Suitable)</strong>' : ''}
+                                <button onclick="selectRoomForBooking(${r.id}, '${startStr}', '${endStr}', ${attendees})">Book This Room</button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            } catch (err) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `<p class="error">${err.message}</p>`;
+            }
+        });
+
+        function selectRoomForBooking(id, start, end, attendees) {
+            document.getElementById('bookRoomId').value = id;
+            document.getElementById('startTime').value = start;
+            document.getElementById('endTime').value = end;
+            if (attendees) document.getElementById('bookAttendees').value = attendees;
+            window.scrollTo({ top: document.getElementById('bookingForm').offsetTop, behavior: 'smooth' });
+        }
+
+        // Booking Form Submission & Validation Handler
+        document.getElementById('bookingForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('message');
+            msg.textContent = '';
 
             const startTime = document.getElementById('startTime').value;
             const endTime = document.getElementById('endTime').value;
 
-            // Acceptance criteria: End time must be after start time
-            if (new Date(endTime) <= new Date(startTime)) {
-                msgBox.textContent = 'Validation Error: End time must be after start time.';
-                msgBox.className = 'mb-4 p-3 rounded text-sm bg-red-100 text-red-800 border border-red-200';
-                msgBox.classList.remove('hidden');
+            if (new Date(startTime) >= new Date(endTime)) {
+                msg.className = 'error';
+                msg.textContent = 'Validation Error: End time must be strictly after start time.';
                 return;
             }
 
             const payload = {
-                roomId: Number(selectedNumericRoomId),
+                room: { id: Number(document.getElementById('bookRoomId').value) },
                 organizer: document.getElementById('organizer').value,
+                attendeeCount: Number(document.getElementById('bookAttendees').value),
                 startTime: startTime,
-                endTime: endTime,
-                attendeeCount: parseInt(document.getElementById('attendeeCount').value)
+                endTime: endTime
             };
 
             try {
-                const response = await fetch('/api/bookings', {
+                const res = await fetch(`${API_URL}/bookings`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    let errorMsg = 'Failed to create booking.';
-                    try {
-                        const errData = await response.json();
-                        errorMsg = errData.message || errData.error || errorMsg;
-                    } catch (parseErr) {}
-                    throw new Error(errorMsg);
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    // Catch conflict/overlap or generic booking failures and show user-friendly message
+                    throw new Error("Can't book this room due to time conflict");
                 }
 
-                let bookingId = '';
-                try {
-                    const data = await response.json();
-                    bookingId = data.id || data.bookingId || '';
-                } catch (parseErr) {}
-
-                // Acceptance criteria: Success message displayed
-                msgBox.textContent = bookingId ? `Success! Booking ID: ${bookingId}` : 'Success! Meeting room booked successfully.';
-                msgBox.className = 'mb-4 p-3 rounded text-sm bg-green-100 text-green-800 border border-green-200';
-                msgBox.classList.remove('hidden');
-                
+                msg.className = 'success';
+                msg.textContent = 'Booking created successfully and saved!';
                 document.getElementById('bookingForm').reset();
-                document.getElementById('roomId').value = '';
-                selectedNumericRoomId = null;
-                loadRooms();
+                fetchRooms();
+                fetchBookings();
             } catch (err) {
-                // Acceptance criteria: Understandable error message displayed
-                msgBox.textContent = err.message;
-                msgBox.className = 'mb-4 p-3 rounded text-sm bg-red-100 text-red-800 border border-red-200';
-                msgBox.classList.remove('hidden');
+                msg.className = 'error';
+                msg.textContent = err.message;
             }
         });
 
-        loadRooms();
+        // Initial Load on Page Startup
+        fetchRooms();
+        fetchBookings();
     </script>
 </body>
 </html>

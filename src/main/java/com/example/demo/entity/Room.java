@@ -1,11 +1,18 @@
 package com.example.demo.entity;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
 @Entity 
@@ -27,6 +34,14 @@ public class Room {
     private boolean available;
 
     private LocalDateTime createdAt;
+
+     @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable (
+        name = "room_facilities",
+        joinColumns = @JoinColumn(name = "room_id")
+    )
+    @Column(name = "facility")
+    private Set<String> facilities = new HashSet<>();
     
     public Room() {
         
@@ -88,6 +103,12 @@ public class Room {
         this.createdAt = createdAt;
     }
 
-    
+    public Set<String> getFacilities() {
+        return facilities;
+    }
+
+    public void setFacilities(Set<String> facilities) {
+        this.facilities = facilities;
+    }
 
 }

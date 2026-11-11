@@ -1,15 +1,14 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.RoomRequestDTO;
 import com.example.demo.entity.Room;
 import com.example.demo.service.RoomService;
 
+import jakarta.validation.Valid;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,32 +23,57 @@ public class RoomController {
         this.roomService = roomService;
     }
 
+    // Retrieve all rooms
     @GetMapping
     public ResponseEntity<List<Room>> getAllRooms() {
-        List<Room> rooms = roomService.getAllRooms();
-        return ResponseEntity.ok(rooms);
+        return ResponseEntity.ok(roomService.getAllRooms());
     }
 
+    // Retrieve room by ID
     @GetMapping("/{id}")
     public ResponseEntity<Room> getRoomById(
             @PathVariable("id") Long id) {
-        Room room = roomService.getRoomId(id);
-        return ResponseEntity.ok(room);
+
+        return ResponseEntity.ok(roomService.getRoomId(id));
     }
 
+    // Search available rooms
     @GetMapping("/available")
     public ResponseEntity<List<Room>> searchAvailableRooms(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime startTime,
 
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime endTime,
 
             @RequestParam Integer minCapacity) {
 
         List<Room> rooms = roomService.searchAvailableRooms(
-                startTime,
-                endTime,
-                minCapacity);
+                startTime, endTime, minCapacity);
 
         return ResponseEntity.ok(rooms);
+    }
+
+    // Create a new room
+    @PostMapping
+    public ResponseEntity<Room> createRoom(
+            @Valid @RequestBody RoomRequestDTO dto) {
+
+        Room createdRoom = roomService.createRoom(dto);
+
+        return ResponseEntity.status(201).body(createdRoom);
+    }
+
+    // Update an existing room
+    @PutMapping("/{id}")
+    public ResponseEntity<Room> updateRoom(
+            @PathVariable Long id,
+            @Valid @RequestBody RoomRequestDTO dto) {
+
+        Room updatedRoom = roomService.updateRoom(id, dto);
+
+        return ResponseEntity.ok(updatedRoom);
     }
 }
