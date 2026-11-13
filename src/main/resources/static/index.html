@@ -73,6 +73,8 @@
 
     <script>
         const API_URL = 'http://localhost:8080/api';
+        const TEN_MINUTES_MS = 10 * 60 * 1000;
+        let cachedRooms = [];
 
         // Robust date parser for Java LocalDateTime (handles both Arrays and Strings)
         function parseBackendDate(val) {
@@ -94,6 +96,7 @@
                 const res = await fetch(`${API_URL}/rooms`);
                 if (!res.ok) throw new Error('Failed to fetch rooms.');
                 const rooms = await res.json();
+                cachedRooms = rooms;
                 
                 loading.style.display = 'none';
                 if (rooms.length === 0) {
@@ -114,17 +117,54 @@
             }
         }
 
-        async function fetchBookings() {
+        // Automatically deletes bookings not checked in within 10 minutes of start time
+        async function cleanupExpiredBookings(bookings) {
+            const now = Date.now();
+            const activeBookings = [];
+            let deletedCount = 0;
+
+            for (const b of bookings) {
+                const startMs = parseBackendDate(b.startTime).getTime();
+                const isExpiredUnchecked = !b.checkedIn && b.status !== 'CANCELLED' && (now - startMs > TEN_MINUTES_MS);
+
+                if (isExpiredUnchecked) {
+                    try {
+                        let delRes = await fetch(`${API_URL}/bookings/${b.id}`, { method: 'DELETE' });
+                        if (!delRes.ok) {
+                            // Fallback if backend uses cancel endpoint instead of DELETE
+                            await fetch(`${API_URL}/bookings/${b.id}/cancel`, { method: 'POST' });
+                        }
+                        deletedCount++;
+                    } catch (err) {
+                        console.error(`Failed to auto-delete expired booking #${b.id}:`, err);
+                    }
+                } else {
+                    activeBookings.push(b);
+                }
+            }
+
+            if (deletedCount > 0) {
+                const msg = document.getElementById('message');
+                msg.className = 'error';
+                msg.textContent = `${deletedCount} un-checked-in booking(s) exceeded the 10-minute check-in window and were automatically deleted.`;
+            }
+
+            return activeBookings;
+        }
+
+        async function fetchBookings(silent = false) {
             const loading = document.getElementById('loadingBookings');
             const list = document.getElementById('bookingsList');
             
-            loading.style.display = 'block';
-            list.innerHTML = '';
+            if (!silent) {
+                loading.style.display = 'block';
+            }
 
             try {
                 const res = await fetch(`${API_URL}/bookings`);
                 if (!res.ok) throw new Error('Failed to fetch bookings.');
-                const bookings = await res.json();
+                const rawBookings = await res.json();
+                const bookings = await cleanupExpiredBookings(rawBookings);
                 
                 loading.style.display = 'none';
                 if (bookings.length === 0) {
@@ -267,6 +307,8 @@
             const msg = document.getElementById('message');
             msg.textContent = '';
 
+            const roomId = Number(document.getElementById('bookRoomId').value);
+            const attendeeCount = Number(document.getElementById('bookAttendees').value);
             const startTime = document.getElementById('startTime').value;
             const endTime = document.getElementById('endTime').value;
 
@@ -276,10 +318,35 @@
                 return;
             }
 
+            // Ensure we have the latest room list to validate capacity
+            let roomsList = cachedRooms;
+            if (!roomsList || roomsList.length === 0) {
+                try {
+                    const rRes = await fetch(`${API_URL}/rooms`);
+                    if (rRes.ok) {
+                        roomsList = await rRes.json();
+                        cachedRooms = roomsList;
+                    }
+                } catch (_) {}
+            }
+
+            const targetRoom = roomsList.find(r => Number(r.id) === roomId);
+            if (!targetRoom) {
+                msg.className = 'error';
+                msg.textContent = `Validation Error: Room ID ${roomId} does not exist.`;
+                return;
+            }
+
+            if (attendeeCount > targetRoom.capacity) {
+                msg.className = 'error';
+                msg.textContent = `Error: Cannot book ${targetRoom.name} — ${attendeeCount} attendees exceeds its maximum capacity of ${targetRoom.capacity}.`;
+                return;
+            }
+
             const payload = {
-                room: { id: Number(document.getElementById('bookRoomId').value) },
+                room: { id: roomId },
                 organizer: document.getElementById('organizer').value,
-                attendeeCount: Number(document.getElementById('bookAttendees').value),
+                attendeeCount: attendeeCount,
                 startTime: startTime,
                 endTime: endTime
             };
@@ -292,8 +359,6 @@
                 });
 
                 if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    // Catch conflict/overlap or generic booking failures and show user-friendly message
                     throw new Error("Can't book this room due to time conflict");
                 }
 
@@ -308,9 +373,10 @@
             }
         });
 
-        // Initial Load on Page Startup
+        // Initial Load on Page Startup & Background 15-second Check for Expired Bookings
         fetchRooms();
         fetchBookings();
+        setInterval(() => fetchBookings(true), 15000);
     </script>
 </body>
 </html>
