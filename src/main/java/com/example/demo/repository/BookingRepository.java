@@ -1,3 +1,4 @@
+
 package com.example.demo.repository;
 
 import java.time.LocalDateTime;
@@ -11,6 +12,10 @@ import com.example.demo.entity.Booking;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
+    // Find bookings belonging to a particular organizer
+    List<Booking> findByOrganizer(String organizer);
+
+    // Check whether a room has an overlapping booking
     @Query("""
         SELECT COUNT(b) > 0
         FROM Booking b
