@@ -54,7 +54,8 @@ class RoomAvailabilityServiceTest {
         when(roomRepository.findAll()).thenReturn(List.of(room));
 
         when(bookingRepository.hasOverlappingBooking(
-                1L, startTime, endTime)).thenReturn(false);
+        1L, startTime.minusMinutes(15), endTime.plusMinutes(15)
+)).thenReturn(false);
 
         List<Room> result = roomService.searchAvailableRooms(
                 startTime, endTime, 4);
@@ -64,7 +65,8 @@ class RoomAvailabilityServiceTest {
 
         verify(roomRepository).findAll();
         verify(bookingRepository).hasOverlappingBooking(
-                1L, startTime, endTime);
+        1L, startTime.minusMinutes(15), endTime.plusMinutes(15)
+);
     }
 
     @Test
@@ -72,7 +74,8 @@ class RoomAvailabilityServiceTest {
         when(roomRepository.findAll()).thenReturn(List.of(room));
 
         when(bookingRepository.hasOverlappingBooking(
-                1L, startTime, endTime)).thenReturn(true);
+        1L, startTime.minusMinutes(15), endTime.plusMinutes(15)
+)).thenReturn(true);
 
         List<Room> result = roomService.searchAvailableRooms(
                 startTime, endTime, 4);
