@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -78,7 +79,7 @@ public class BookingService {
         }
 
         booking.setRoom(room);
-        booking.setCreatedAt(LocalDateTime.now());
+        booking.setCreatedAt(LocalDateTime.now(ZoneId.of("Europe/Dublin")));
 
         return bookingRepository.save(booking);
     }

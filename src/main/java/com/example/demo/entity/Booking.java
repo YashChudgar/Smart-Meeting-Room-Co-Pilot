@@ -46,7 +46,8 @@ public class Booking {
     private LocalDateTime releasedAt;
 
     public Booking() {
-
+        // Required by JPA/Hibernate to create entity instances.
+        
     }
 
     public Long getId() {

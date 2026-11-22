@@ -44,7 +44,7 @@ public class Room {
     private Set<String> facilities = new HashSet<>();
     
     public Room() {
-        
+        // Required by JPA/Hibernate to create entity instances.
     }
     
     public Long getId() {
