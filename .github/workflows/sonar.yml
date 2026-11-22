@@ -19,11 +19,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout source code
       - name: Checkout Source Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
 
+      # Step 2: Configure Java 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # Step 3: Build, test and generate JaCoCo coverage
+      - name: Build, Test and Generate Coverage
+        run: ./mvnw -B clean verify
+
+      # Step 4: Confirm coverage report exists
+      - name: Verify JaCoCo Report
+        run: |
+          test -f target/site/jacoco/jacoco.xml
+          echo "JaCoCo coverage report generated successfully."
+
+      # Step 5: Run SonarQube Cloud analysis
       - name: Run SonarQube Cloud Scan
         uses: SonarSource/sonarqube-scan-action@0303d6b62e310685c0e34d0b9cde218036885c4d
         env:
@@ -34,3 +53,4 @@ jobs:
             -Dsonar.projectKey=YashChudgar_Smart-Meeting-Room-Co-Pilot
             -Dsonar.organization=yashchudgar
             -Dsonar.sources=.
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
