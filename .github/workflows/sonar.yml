@@ -34,7 +34,9 @@ jobs:
 
       # Step 3: Build, test and generate JaCoCo coverage
       - name: Build, Test and Generate Coverage
-        run: ./mvnw -B clean verify
+        run: |
+          chmod +x mvnw
+          ./mvnw -B clean verify
 
       # Step 4: Confirm coverage report exists
       - name: Verify JaCoCo Report
