@@ -2,11 +2,6 @@
 package com.example.demo.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;

@@ -1,8 +1,8 @@
 
 package com.example.demo;
 
-import com.example.demo.controller.BookingController;
-import com.example.demo.entity.Booking;
+
+
 import com.example.demo.service.BookingService;
 
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,6 +31,7 @@ class DemoApplicationTests {
 
     @Test
     void contextLoads() {
+        //
     }
 
     @Test
