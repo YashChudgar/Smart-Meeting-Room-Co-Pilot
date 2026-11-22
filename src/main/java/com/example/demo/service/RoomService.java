@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -99,7 +100,7 @@ public class RoomService {
 
         validateFacilities(room.getFacilities());
 
-        room.setCreatedAt(LocalDateTime.now());
+        room.setCreatedAt(LocalDateTime.now(ZoneId.of("Europe/Dublin")));
 
         return roomRepository.save(room);
     }
